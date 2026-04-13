@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Juego de Apareamiento — El Estado Colombiano</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --surface2: #f1f0ec;
+    --border: rgba(0,0,0,0.12);
+    --border2: rgba(0,0,0,0.22);
+    --text: #1a1a18;
+    --text2: #5f5e5a;
+    --text3: #9a9890;
+    --blue-bg: #e6f1fb;
+    --blue-text: #0c447c;
+    --blue-border: #378add;
+    --green-bg: #eaf3de;
+    --green-text: #27500a;
+    --green-border: #3b6d11;
+    --red-bg: #fcebeb;
+    --red-text: #791f1f;
+    --red-border: #a32d2d;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --surface: #2a2a27;
+      --surface2: #222220;
+      --border: rgba(255,255,255,0.10);
+      --border2: rgba(255,255,255,0.20);
+      --text: #f0ede6;
+      --text2: #a8a69e;
+      --text3: #6b6965;
+      --blue-bg: #042c53;
+      --blue-text: #b5d4f4;
+      --blue-border: #378add;
+      --green-bg: #173404;
+      --green-text: #c0dd97;
+      --green-border: #3b6d11;
+      --red-bg: #501313;
+      --red-text: #f7c1c1;
+      --red-border: #a32d2d;
+    }
+  }
+
+  body {
+    background: var(--bg);
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  header .subject {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  header p {
+    font-size: 14px;
+    color: var(--text2);
+  }
+
+  .container { max-width: 860px; margin: 0 auto; }
+
+  .score-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .score-pill {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 18px;
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .score-pill span { font-weight: 600; color: var(--text); }
+  .round-label { font-size: 13px; color: var(--text3); }
+  .btn-reset {
+    background: transparent;
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius-md);
+    padding: 6px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--text2);
+    font-family: inherit;
+  }
+  .btn-reset:hover { background: var(--surface2); }
+
+  .progress-track { display: flex; gap: 6px; margin-bottom: 0.75rem; }
+  .progress-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 0.5px solid var(--border2);
+    background: transparent;
+    transition: background 0.2s;
+  }
+  .progress-dot.done { background: #1d9e75; border-color: #1d9e75; }
+
+  .feedback-msg {
+    min-height: 22px; font-size: 13px; text-align: center;
+    color: var(--text3); margin-bottom: 10px; transition: color 0.2s;
+  }
+  .feedback-msg.ok { color: #0f6e56; }
+  .feedback-msg.err { color: #a32d2d; }
+
+  .cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 580px) {
+    .cols { grid-template-columns: 1fr; }
+  }
+
+  .col-header {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 8px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.1s;
+    font-size: 13.5px;
+    line-height: 1.55;
+    min-height: 68px;
+    display: flex;
+    align-items: center;
+    user-select: none;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .card:hover:not(.matched):not(.disabled) {
+    border-color: var(--border2);
+    background: var(--surface2);
+  }
+  .card .tag {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--text3);
+    display: block; margin-bottom: 4px;
+  }
+  .card.selected {
+    border-color: var(--blue-border);
+    background: var(--blue-bg);
+    color: var(--blue-text);
+  }
+  .card.selected .tag { color: var(--blue-border); }
+  .card.matched {
+    border-color: var(--green-border);
+    background: var(--green-bg);
+    color: var(--green-text);
+    pointer-events: none;
+    opacity: 0.85;
+  }
+  .card.matched .tag { color: var(--green-border); }
+  .card.wrong {
+    border-color: var(--red-border);
+    background: var(--red-bg);
+    color: var(--red-text);
+    animation: shake 0.35s;
+  }
+  .card.wrong .tag { color: var(--red-border); }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+
+  .result-banner {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-top: 1rem;
+  }
+  .result-banner .emoji { font-size: 48px; margin-bottom: 1rem; display: block; }
+  .result-banner h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  .result-banner p { font-size: 15px; color: var(--text2); margin-bottom: 1.5rem; line-height: 1.6; }
+  .result-banner .pct {
+    display: inline-block;
+    font-size: 42px; font-weight: 700;
+    color: var(--text); margin-bottom: 0.5rem;
+  }
+  .btn-play {
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 12px 32px;
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .btn-play:hover { opacity: 0.85; }
+
+  .instructions {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<header>
+  <p class="subject">Ciencias Sociales · Grado 11°</p>
+  <h1>El Estado Colombiano</h1>
+  <p>Juego de apareamiento — Ramas del poder, elementos y organización del Estado</p>
+</header>
+
+<div class="container">
+  <div class="score-bar">
+    <div class="score-pill">Aciertos: <span id="hits">0</span> / <span id="total">0</span></div>
+    <div class="round-label" id="round-lbl">Ronda 1 de 3</div>
+    <button class="btn-reset" onclick="initRound()">↺ Reiniciar</button>
+  </div>
+  <div class="progress-track" id="prog-track"></div>
+  <div class="instructions">Selecciona un <strong>concepto</strong> de la columna izquierda y su <strong>definición</strong> en la derecha. ¡Emparéjalos correctamente!</div>
+  <div class="feedback-msg" id="fb"></div>
+  <div id="board"></div>
+</div>
+
+<script>
+const ALL_PAIRS = [
+  { concept: "Estado", def: "Conglomerado social, político y jurídicamente constituido, asentado en un territorio determinado, bajo una autoridad soberana reconocida por otros Estados." },
+  { concept: "Población", def: "Conjunto de individuos sometidos a la autoridad fundamental del Estado; incluye nacionales por nacimiento, por adopción y extranjeros." },
+  { concept: "Territorio", def: "Elemento físico en el que se asienta la población y dentro del cual se ejerce el poder del Estado." },
+  { concept: "Soberanía", def: "Poder que reside exclusivamente en el pueblo, del cual emana el poder público, ejercido de forma directa o por representantes." },
+  { concept: "Nación", def: "Comunidad de personas que comparten historia, cultura, idioma y sentido de identidad colectiva, no siempre coincide con el Estado." },
+  { concept: "Subsuelo", def: "Parte del territorio que se extiende bajo la superficie terrestre y marítima, reconocida en el artículo 101 de la Constitución Política." },
+  { concept: "Espacio aéreo", def: "Zona del territorio que se extiende sobre el suelo y el mar territorial de un Estado, sometida a su jurisdicción." },
+  { concept: "Grupos étnicos", def: "Comunidades reconocidas en Colombia: indígenas, afrocolombianos, raizales del archipiélago de San Andrés y Rom o gitanos." },
+  { concept: "Nacionales colombianos", def: "Personas nacidas en el país, hijos de colombianos nacidos en el exterior que fijaron domicilio, y quienes obtuvieron la nacionalidad por adopción." },
+  { concept: "Zona económica exclusiva", def: "Franja marítima de hasta 200 millas náuticas donde Colombia ejerce derechos de exploración y explotación de recursos." },
+  { concept: "Artículo 3° C.P.", def: "Establece que la soberanía reside exclusivamente en el pueblo, del cual emana el poder público." },
+  { concept: "Artículo 101 C.P.", def: "Define los límites del territorio colombiano: territorio continental, islas, mar territorial, espacio aéreo y otros elementos." },
+  { concept: "Plataforma continental", def: "Extensión submarina del territorio que da derecho al Estado sobre los recursos del suelo y subsuelo marinos adyacentes a sus costas." },
+  { concept: "Poder público", def: "Autoridad que emana del pueblo soberano y se ejerce a través de los órganos del Estado para mantener el orden y la convivencia." },
+  { concept: "2.070.408 km²", def: "Extensión total del territorio colombiano, donde el 55 % es continental y el 45 % corresponde a territorio marítimo." },
+];
+
+const ROUNDS = [
+  [0,1,2,3,4],
+  [5,6,7,8,9],
+  [10,11,12,13,14]
+];
+const PER_ROUND = 5;
+let round = 0, hits = 0, total = 0;
+let selectedConcept = null, selectedDef = null;
+let blocked = false, matched = new Set();
+let shuffledConcepts = [], shuffledDefs = [];
+
+function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+function initRound() {
+  round = 0; hits = 0; total = 0;
+  matched.clear(); selectedConcept = null; selectedDef = null; blocked = false;
+  updateScore(); loadRound(0);
+}
+
+function loadRound(r) {
+  round = r; matched.clear();
+  selectedConcept = null; selectedDef = null; blocked = false;
+  const pairs = ROUNDS[r].map(i => ALL_PAIRS[i]);
+  shuffledConcepts = shuffle(pairs);
+  shuffledDefs = shuffle(pairs);
+  renderBoard(); updateScore(); updateProgress(); setFb('', '');
+}
+
+function updateScore() {
+  document.getElementById('hits').textContent = hits;
+  document.getElementById('total').textContent = total;
+  document.getElementById('round-lbl').textContent = `Ronda ${round+1} de ${ROUNDS.length}`;
+}
+
+function updateProgress() {
+  const track = document.getElementById('prog-track');
+  track.innerHTML = '';
+  for (let i = 0; i < PER_ROUND; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (i < matched.size ? ' done' : '');
+    track.appendChild(dot);
+  }
+}
+
+function setFb(msg, type) {
+  const el = document.getElementById('fb');
+  el.textContent = msg;
+  el.className = 'feedback-msg' + (type ? ' ' + type : '');
+}
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  const cols = document.createElement('div');
+  cols.className = 'cols';
+  const leftCol = document.createElement('div');
+  const rightCol = document.createElement('div');
+  const lh = document.createElement('div'); lh.className = 'col-header'; lh.textContent = 'Concepto';
+  const rh = document.createElement('div'); rh.className = 'col-header'; rh.textContent = 'Definición';
+  leftCol.appendChild(lh); rightCol.appendChild(rh);
+
+  shuffledConcepts.forEach(pair => {
+    const card = document.createElement('div');
+    card.className = 'card' + (matched.has(pair.concept) ? ' matched' : '');
+    card.dataset.concept = pair.concept;
+    card.innerHTML = `<div><span class="tag">concepto</span>${pair.concept}</div>`;
+    if (!matched.has(pair.concept)) card.onclick = () => selectConcept(pair.concept);
+    leftCol.appendChild(card);
+  });
+
+  shuffledDefs.forEach(pair => {
+    const card = document.createElement('div');
+    card.className = 'card' + (matched.has(pair.concept) ? ' matched' : '');
+    card.dataset.def = pair.concept;
+    card.innerHTML = `<div><span class="tag">definición</span>${pair.def}</div>`;
+    if (!matched.has(pair.concept)) card.onclick = () => selectDef(pair.concept);
+    rightCol.appendChild(card);
+  });
+
+  cols.appendChild(leftCol); cols.appendChild(rightCol);
+  board.appendChild(cols);
+}
+
+function selectConcept(concept) {
+  if (blocked || matched.has(concept)) return;
+  selectedConcept = concept;
+  highlightSelected();
+  if (selectedDef) checkMatch();
+}
+
+function selectDef(concept) {
+  if (blocked || matched.has(concept)) return;
+  selectedDef = concept;
+  highlightSelected();
+  if (selectedConcept) checkMatch();
+}
+
+function highlightSelected() {
+  document.querySelectorAll('.card').forEach(c => {
+    if (!c.classList.contains('matched')) c.classList.remove('selected');
+  });
+  if (selectedConcept) document.querySelectorAll(`[data-concept]`).forEach(c => {
+    if (c.dataset.concept === selectedConcept) c.classList.add('selected');
+  });
+  if (selectedDef) document.querySelectorAll(`[data-def]`).forEach(c => {
+    if (c.dataset.def === selectedDef) c.classList.add('selected');
+  });
+}
+
+function checkMatch() {
+  blocked = true; total++;
+  const isMatch = selectedConcept === selectedDef;
+  if (isMatch) {
+    hits++;
+    matched.add(selectedConcept);
+    setFb('¡Correcto! Muy bien.', 'ok');
+    markCards(selectedConcept, 'matched');
+    selectedConcept = null; selectedDef = null;
+    blocked = false;
+    updateScore(); updateProgress();
+    if (matched.size === PER_ROUND) setTimeout(() => nextRound(), 900);
+  } else {
+    setFb('Incorrecto. Intenta de nuevo.', 'err');
+    markCards(selectedConcept, 'wrong', 'concept');
+    markCards(selectedDef, 'wrong', 'def');
+    updateScore();
+    setTimeout(() => {
+      clearWrong(); selectedConcept = null; selectedDef = null;
+      blocked = false; highlightSelected(); setFb('', '');
+    }, 800);
+  }
+}
+
+function markCards(key, cls, side) {
+  if (side === 'concept' || !side)
+    document.querySelectorAll(`[data-concept]`).forEach(c => { if (c.dataset.concept === key) { c.classList.remove('selected'); c.classList.add(cls); } });
+  if (side === 'def' || !side)
+    document.querySelectorAll(`[data-def]`).forEach(c => { if (c.dataset.def === key) { c.classList.remove('selected'); c.classList.add(cls); } });
+}
+
+function clearWrong() {
+  document.querySelectorAll('.card.wrong').forEach(c => c.classList.remove('wrong'));
+}
+
+function nextRound() {
+  if (round + 1 < ROUNDS.length) {
+    loadRound(round + 1);
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  const board = document.getElementById('board');
+  const pct = Math.round((hits / total) * 100);
+  let emoji = pct >= 80 ? '🎉' : pct >= 60 ? '👍' : '📚';
+  let msg = pct >= 80 ? '¡Excelente dominio del tema!' : pct >= 60 ? 'Buen trabajo, sigue repasando.' : 'Repasa los conceptos e inténtalo de nuevo.';
+  board.innerHTML = `
+    <div class="result-banner">
+      <span class="emoji">${emoji}</span>
+      <div class="pct">${pct}%</div>
+      <h2>Juego terminado</h2>
+      <p>${hits} respuestas correctas de ${total} intentos.<br>${msg}</p>
+      <button class="btn-play" onclick="initRound()">Jugar de nuevo</button>
+    </div>`;
+  document.getElementById('prog-track').innerHTML = '';
+  setFb('', '');
+  document.getElementById('round-lbl').textContent = 'Resultado final';
+}
+
+initRound();
+</script>
+</body>
+</html>
